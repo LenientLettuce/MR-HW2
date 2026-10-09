@@ -67,8 +67,8 @@ class OpenLoopSquare(Node):
         """Create a new CSV under the repository's Square Loop Runs folder."""
         repository_root = next(
             (parent for parent in Path(__file__).resolve().parents
-             if (parent / 'src' / 'package.xml').is_file()
-             and (parent / 'src' / 'scripts' / 'open_loop_square.py').is_file()),
+             if (parent / 'src_mustafa' / 'package.xml').is_file()
+             and (parent / 'src_mustafa' / 'scripts' / 'open_loop_square.py').is_file()),
             None,
         )
         if repository_root is None:

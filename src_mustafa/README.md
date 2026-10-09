@@ -25,10 +25,10 @@ bridge.
 ## 2. Build
 
 ```bash
-mkdir -p ~/a2_ws/src
-cp -r a2_description ~/a2_ws/src/        # or clone the template repo there
-cd ~/a2_ws
-colcon build --symlink-install
+# From the HW2 / MR-HW2 repository root:
+cd src_mustafa
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install --packages-select a2_description --cmake-clean-cache
 source install/setup.bash                # in EVERY new terminal
 ```
 

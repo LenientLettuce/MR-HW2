@@ -1,9 +1,37 @@
-# Local tooling
-.claude/
-
-# colcon / ROS build artifacts
+# colcon / ROS build artifacts at any workspace level
 build/
 install/
 log/
+
+# Python caches and local environments
 __pycache__/
-*.pyc
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Local tooling, credentials, and editor state
+.claude/
+.codex/
+.agents/
+.aws/
+.vscode/
+.idea/
+.env
+.env.*
+!.env.example
+
+# Editor / OS temporary files
+*~
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Ad hoc TF exports; curated snapshots live in Graphs/frames/
+/frames_*.gv
+/frames_*.pdf
+/src_mustafa/frames_*.gv
+/src_mustafa/frames_*.pdf

@@ -1,9 +1,0 @@
-# Local tooling
-.claude/
-
-# colcon / ROS build artifacts
-build/
-install/
-log/
-__pycache__/
-*.pyc
