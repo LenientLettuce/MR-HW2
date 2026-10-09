@@ -56,7 +56,7 @@ class OpenLoopSquare(Node):
         self.leg = 0
         self.phase_start = None
         self.sign = 1.0 if self.direction == 'ccw' else -1.0
-        self.timer = self.create_timer(0.02, self.tick)
+        self.timer = self.create_timer(0.002, self.tick)
 
         self.get_logger().info(
             f'Logging both odometry topics; driving a {self.L} m square '
