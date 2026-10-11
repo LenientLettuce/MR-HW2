@@ -1,0 +1,12 @@
+odometry_node:
+  ros__parameters:
+    use_sim_time: true
+    # P08 actual dimensions (metres), from config/pairs.yaml.
+    r_left: 0.054146
+    r_right: 0.053854
+    b: 0.319
+    # Match the original Gazebo odometry and ground-truth publish frequency.
+    publish_rate: 50.0
+    # Supported methods: euler, exact, rk2. sim.launch.py overrides this
+    # with its method argument (default rk2).
+    method: exact

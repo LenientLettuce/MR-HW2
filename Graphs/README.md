@@ -37,3 +37,33 @@ X markers show the final poses. Post-stop duplicate poses are retained and
 do not change the line. In-place turns do not add segments to the ideal
 square. To satisfy "one run of each robot," use a CSV from each robot;
 different runs alone do not establish that different robots were used.
+
+## Arc comparison
+
+`plot_arc.py` plots the commanded arc, Euler/Exact estimates, and ground truth,
+plus two spatial close-ups of the final poses: all estimates in millimetres,
+and Euler versus Exact in micrometres when their separation is below 1 mm.
+The final close-up marks the separation vector and its x/y components.
+Run it after the
+`arc_run.launch.py` experiment described in `src_mustafa/README.md`:
+
+```bash
+python3 Graphs/plot_arc.py
+python3 Graphs/plot_arc.py --csv 'Arc Runs/arc_<id>.csv' --title 'P08 arc'
+```
+
+The default selects the latest CSV in `Arc Runs`. Its companion JSON is required
+for command parameters, the start pose, and the command-stop time. Output is
+PNG/PDF plus a Markdown endpoint table and discussion, using the CSV stem as
+the output name. Set `--output` to choose another output stem.
+New arc runs integrate at 100 Hz and log at 50 Hz. The plot title and report
+show the integration rate saved in the JSON; older runs retain their original
+interpretation and are not relabeled as 100 Hz.
+
+The two estimates use a shared start frame and are compared at identical
+timestamps. Ground truth is transformed using the recorded start pose and
+interpolated at those timestamps; uncovered endpoints are reported as n.a.
+Both the endpoint at the stop command and the final endpoint after settling
+are reported. The near-full-circle arc can partly cancel endpoint error, so
+a small endpoint difference need not represent the whole path. Exact removes an integration approximation,
+but cannot correct wheel slip or incorrect geometric parameters.

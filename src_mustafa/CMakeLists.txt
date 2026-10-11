@@ -13,8 +13,15 @@ install(
 # Helper nodes, runnable with `ros2 run a2_description <script>`.
 install(
   PROGRAMS scripts/umbmark_driver.py scripts/path_publisher.py scripts/cone_driver.py
-           scripts/open_loop_square.py
+           scripts/open_loop_square.py scripts/arc_run.py scripts/odometry_node.py
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# Keep the requested executable name independent of the Python file extension.
+install(
+  PROGRAMS scripts/odometry_node.py
+  DESTINATION lib/${PROJECT_NAME}
+  RENAME odometry_node
 )
 
 ament_package()

@@ -36,6 +36,7 @@ class OpenLoopSquare(Node):
         self.v = self.declare_parameter('v', 0.2).value
         self.omega = self.declare_parameter('omega', 0.5).value
         self.direction = self.declare_parameter('direction', 'ccw').value
+        self.odom_topic = self.declare_parameter('odom_topic', '/odom').value
         for name, value in [('L', self.L), ('v', self.v), ('omega', self.omega)]:
             if not math.isfinite(value) or value <= 0.0:
                 raise ValueError(f'{name} must be finite and greater than zero.')
@@ -48,7 +49,7 @@ class OpenLoopSquare(Node):
 
         self.cmd = self.create_publisher(Twist, '/cmd_vel', 10)
         self.odom_sub = self.create_subscription(
-            Odometry, '/odom', self.on_odom, 50)
+            Odometry, self.odom_topic, self.on_odom, 50)
         self.gt_sub = self.create_subscription(
             Odometry, '/ground_truth/odom', self.on_gt, 50)
         
@@ -56,10 +57,10 @@ class OpenLoopSquare(Node):
         self.leg = 0
         self.phase_start = None
         self.sign = 1.0 if self.direction == 'ccw' else -1.0
-        self.timer = self.create_timer(0.002, self.tick)
+        self.timer = self.create_timer(0.02, self.tick)
 
         self.get_logger().info(
-            f'Logging both odometry topics; driving a {self.L} m square '
+            f'Logging {self.odom_topic} and /ground_truth/odom; driving a {self.L} m square '
             f'{self.direction} using simulation-clock durations.'
         )
 
@@ -109,7 +110,7 @@ class OpenLoopSquare(Node):
 
     def on_odom(self, msg):
         self.odom = pose_of(msg)
-        self.log_pose('/odom', msg)
+        self.log_pose(self.odom_sub.topic_name, msg)
 
     def on_gt(self, msg):
         self.gt = pose_of(msg)

@@ -14,6 +14,10 @@ Arguments (all optional):
                              noise; 0 turns it off   (default 0.01)
     plugin_tf                bridge the plugin's odom->base_link TF
                                                      (default true)
+    own_odometry             use student's odometry on /odom and /odom_own;
+                             disables plugin TF      (default false)
+    method                   euler, rk2 or exact for own odometry (default rk2)
+    odometry_params_file     odometry YAML (default config/odometry.yaml)
     gt_tf                    bridge the ground-truth world->base_link_gt TF
                                                      (default true)
     gui                      show the Gazebo window  (default true)
@@ -76,6 +80,7 @@ def launch_setup(context, *args, **kwargs):
     if max(abs(x0), abs(y0)) > 5.5:
         raise RuntimeError(f'spawn ({x0:g}, {y0:g}) is outside the arena (|x|, |y| <= 5.5 m)')
     cone = LaunchConfiguration('cone').perform(context).lower() == 'true'
+    own_odometry = LaunchConfiguration('own_odometry').perform(context).lower() == 'true'
 
     actual, wheel_width = load_pair(share, pair)
     r_l = actual['wheel_radius_left']
@@ -145,6 +150,7 @@ def launch_setup(context, *args, **kwargs):
         output='screen',
         parameters=[{'config_file': os.path.join(share, 'config', 'bridge.yaml'),
                      'use_sim_time': True}],
+        remappings=[('/odom', '/odom_plugin')] if own_odometry else [],
     )
 
     bridge_plugin_tf = Node(
@@ -152,7 +158,7 @@ def launch_setup(context, *args, **kwargs):
         executable='parameter_bridge',
         name='bridge_plugin_tf',
         output='screen',
-        condition=IfCondition(LaunchConfiguration('plugin_tf')),
+        condition=IfCondition('false' if own_odometry else LaunchConfiguration('plugin_tf')),
         parameters=[{'config_file': os.path.join(share, 'config', 'bridge_plugin_tf.yaml'),
                      'use_sim_time': True}],
     )
@@ -224,6 +230,20 @@ def launch_setup(context, *args, **kwargs):
             parameters=[{'path': path_name, 'use_sim_time': True}],
         )]
 
+    student_nodes = []
+    if own_odometry:
+        student_nodes.append(Node(
+            package=PKG,
+            executable='odometry_node',
+            name='odometry_node',
+            output='screen',
+            parameters=[LaunchConfiguration('odometry_params_file').perform(context), {
+                'use_sim_time': True,
+                'publish_odom': True,
+                'method': LaunchConfiguration('method').perform(context),
+            }],
+        ))
+
     summary = LogInfo(msg=(
         f'\n[A2] pair {pair}: physical r_left = {r_l:.6f} m, r_right = {r_r:.6f} m, '
         f'b = {b:.4f} m\n'
@@ -236,7 +256,7 @@ def launch_setup(context, *args, **kwargs):
 
     return [summary, *gazebo, robot_state_publisher, spawn, bridge,
             bridge_plugin_tf, bridge_gt_tf, world_to_odom, rviz, *path_publisher,
-            *cone_nodes]
+            *cone_nodes, *student_nodes]
 
 
 def generate_launch_description():
@@ -249,6 +269,15 @@ def generate_launch_description():
                               description='Std dev (m) of LiDAR range noise; 0 = off'),
         DeclareLaunchArgument('plugin_tf', default_value='true',
                               description="Bridge the plugin's odom->base_link TF"),
+        DeclareLaunchArgument('own_odometry', default_value='false',
+                              description='Replace /odom and odom->base_link TF with own odometry'),
+        DeclareLaunchArgument('method', default_value='rk2',
+                              choices=['euler', 'rk2', 'exact'],
+                              description='Own odometry integration method'),
+        DeclareLaunchArgument('odometry_params_file',
+                              default_value=os.path.join(get_package_share_directory(PKG),
+                                                         'config', 'odometry.yaml'),
+                              description='Own odometry parameters (P08 dimensions by default)'),
         DeclareLaunchArgument('gt_tf', default_value='true',
                               description='Bridge the ground-truth world->base_link_gt TF'),
         DeclareLaunchArgument('gui', default_value='true',

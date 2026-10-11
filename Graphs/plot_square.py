@@ -92,7 +92,7 @@ def plot_run(csv_path, side, direction, title, output_stem):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--csv', type=Path,
-                        default=HW2_ROOT / 'Square Loop Runs' / 'square_loop_run4.csv')
+                        default=HW2_ROOT / 'Square Loop Runs' / 'square_loop_correct_odom_run2.csv')
     parser.add_argument('--side', type=float, default=2.0,
                         help='Commanded L in metres; not stored in the pose CSV')
     parser.add_argument('--direction', choices=('cw', 'ccw'), default='ccw')

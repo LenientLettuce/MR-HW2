@@ -1,0 +1,20 @@
+{
+  "v": 0.2,
+  "omega": 0.2,
+  "duration": 30.0,
+  "settle_time": 1.0,
+  "publish_rate": 50.0,
+  "integration_rate": 100.0,
+  "r_left": 0.054146,
+  "r_right": 0.053854,
+  "b": 0.319,
+  "start_ns": 3740000000,
+  "stop_ns": 33740000000,
+  "integration": "shared cumulative wheel travel at integration_rate",
+  "comparison_frame": "arc_start",
+  "ground_truth_start": [
+    -4.3674149546619566e-10,
+    1.481096411179902e-14,
+    3.523296335428681e-19
+  ]
+}

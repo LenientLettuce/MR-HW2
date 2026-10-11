@@ -154,6 +154,124 @@ xacro $(ros2 pkg prefix a2_description)/share/a2_description/urdf/a2_bot.urdf.xa
   wheel_radius_left:=<r_L> wheel_radius_right:=<r_R> wheel_separation:=<b> > my_robot.urdf
 ```
 
+## Own odometry and square runs
+
+The node supports `euler`, `rk2` and `exact`. Its callback reads cumulative
+wheel angles, initializes the first valid baseline, integrates wheel travel,
+and publishes `/odom_own` and the `odom -> base_link` transform.
+Pose integration uses every encoder update; odometry messages and TF are
+published at 50 Hz of simulation time, matching the original plugin.
+Change `publish_rate` in `config/odometry.yaml` to adjust this rate. Published
+velocities average the wheel motion over each publication interval. CSV
+columns and the `nav_msgs/Odometry` message format stay the same.
+Parameters in `config/odometry.yaml` use **P08 actual dimensions**. Changing
+`pair` changes the simulation robot; set matching dimensions in the YAML
+when using another pair.
+
+Rebuild and source using section 2, then launch the simulation with custom odometry:
+
+```bash
+ros2 launch a2_description sim.launch.py pair:=P08 plugin_tf:=false \
+  own_odometry:=true method:=rk2
+```
+
+Launch the square driver separately using the command below. Do not run another
+velocity controller during a square run. Logs remain in the repository's
+`Square Loop Runs` folder.
+
+With `own_odometry:=true`, your node publishes identical messages on
+`/odom_own` and `/odom`; plugin odometry moves to `/odom_plugin` for comparison.
+The plugin TF bridge is disabled automatically, even if `plugin_tf` is left
+at its default. Existing consumers of `/odom`, including the square driver,
+therefore receive custom odometry. With `own_odometry:=false`, the plugin
+keeps `/odom`, and `plugin_tf` controls its TF bridge as before.
+
+`method:=euler` selects Euler, `method:=rk2` selects RK2 (the launch default),
+and `method:=exact` selects your original Exact equations. Exact still divides
+by zero on stationary or equal-travel updates, so use RK2 or Euler for runs
+that include those updates. The launch `method` argument overrides the YAML's
+method; the YAML remains configurable via `odometry_params_file:=/absolute/path.yaml`.
+
+The convenience wrapper still works and starts the same components:
+
+```bash
+ros2 launch a2_description odometry.launch.py method:=euler
+```
+
+For an already running simulation, launch the square driver separately:
+
+```bash
+ros2 launch a2_description open_loop_square.launch.py odom_topic:=/odom_own
+```
+
+Or start your odometry node separately (disable plugin TF in the simulation):
+
+```bash
+ros2 run a2_description odometry_node --ros-args \
+  -p use_sim_time:=true -p method:=rk2
+```
+
+Standalone odometry publishes only `/odom_own` by default. The integrated
+launch enables the `/odom` alias after moving the plugin off that topic.
+Inspect output with `ros2 topic echo /odom_own`, `ros2 topic info /odom -v`,
+and `ros2 run tf2_ros tf2_echo odom base_link`.
+
+## Euler vs Exact arc comparison
+
+Rebuild and source as in section 2. Start a fresh simulation separately:
+
+```bash
+ros2 launch a2_description sim.launch.py pair:=P08 plugin_tf:=false \
+  own_odometry:=true method:=euler
+```
+
+In another sourced terminal, run the comparison:
+
+```bash
+ros2 launch a2_description arc_run.launch.py
+```
+
+This drives `v=0.2 m/s`, `omega=0.2 rad/s` for 30 seconds of simulation time,
+then sends stop commands, logs one second of settling, and exits. Do not run
+the square driver or teleop at the same time. A single `/joint_states` callback
+feeds identical increments to both methods, reusing `OdometryNode.integrate_pose`.
+The comparison runner handles straight/stationary increments locally so the
+existing Exact equations can remain unchanged. Your main custom odometry node
+supplies `/odom`, `/odom_own`, and robot TF. The arc runner additionally computes
+both Euler and Exact using your integration code on identical encoder samples;
+these comparison estimates do not use the plugin's odometry. No comparison TF
+is broadcast, so the main custom node remains the sole robot odometry TF source.
+
+`/odom_euler` and `/odom_exact` publish at 50 Hz in the shared `arc_start` frame,
+and `/ground_truth/odom` is logged in its world frame. CSVs and matching JSON
+metadata are saved with unique names in `Arc Runs`. Keep each CSV and JSON
+together. Both methods integrate at 100 Hz by default, using the cumulative
+wheel-angle change since the previous integration step, so intermediate wheel
+motion is retained. Publication/logging remains at 50 Hz. The metadata stores
+the integration rate, P08 wheel dimensions,
+commands, start/stop times, and the starting ground-truth pose. Override launch
+arguments `v`, `omega`, `duration`, `settle_time`, `integration_rate`, `publish_rate`, `r_left`,
+`r_right`, or `b` if needed. Direct invocation also works:
+
+```bash
+ros2 run a2_description arc_run.py --ros-args -p use_sim_time:=true
+```
+
+After the run, from the HW2 repository root:
+
+```bash
+python3 Graphs/plot_arc.py
+# Or select a particular run:
+python3 Graphs/plot_arc.py --csv 'Arc Runs/arc_<id>.csv'
+```
+
+The plot script selects the latest run by default and writes PNG/PDF plots
+plus an endpoint report in `Graphs`. It compares Euler and Exact at matched
+message timestamps, transforms ground truth into the start frame, and reports
+both the command-end and final settled endpoint differences. At a high encoder
+update rate these differences may be tiny; the final-pose close-ups use millimetres
+and micrometres to show the spatial separation clearly.
+
 ## 7. When something goes wrong
 
 | Symptom | Likely cause and fix |
