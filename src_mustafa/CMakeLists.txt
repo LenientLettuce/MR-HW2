@@ -14,6 +14,7 @@ install(
 install(
   PROGRAMS scripts/umbmark_driver.py scripts/path_publisher.py scripts/cone_driver.py
            scripts/open_loop_square.py scripts/arc_run.py scripts/odometry_node.py
+           scripts/pure_pursuit.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

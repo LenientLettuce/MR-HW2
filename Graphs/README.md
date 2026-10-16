@@ -67,3 +67,42 @@ Both the endpoint at the stop command and the final endpoint after settling
 are reported. The near-full-circle arc can partly cancel endpoint error, so
 a small endpoint difference need not represent the whole path. Exact removes an integration approximation,
 but cannot correct wheel slip or incorrect geometric parameters.
+
+## Pure pursuit runs
+
+`plot_pure_pursuit.py` reads the CSVs in `Pure Pursuit Runs` and saves a
+PNG and PDF in `Graphs`, with the reference, odometry, and true paths on
+one panel with equal axes, and both unsigned cross-track errors against
+elapsed simulation time on another panel.
+
+```bash
+python3 Graphs/plot_pure_pursuit.py --csv 'Pure Pursuit Runs/circle_run1.csv'
+python3 Graphs/plot_pure_pursuit.py --csv 'Pure Pursuit Runs/square_run1.csv'
+```
+
+Keep the companion JSON next to its CSV to include the pair, lookahead,
+speed, and saved reference waypoints. Without JSON, the reference is loaded
+from the packaged CSV based on the run filename. Logged ground-truth positions
+are already in the odom frame; this script does not transform them again.
+Use `--title` for a custom title or `--output` for another output file stem.
+Matplotlib is required; ROS is not.
+
+Compare several pure pursuit runs in one figure:
+
+```bash
+python3 Graphs/plot_pure_pursuit.py \
+  --csv 'Pure Pursuit Runs/circle_run1.csv' \
+        'Pure Pursuit Runs/circle_run2.csv' \
+        'Pure Pursuit Runs/circle_run3.csv' \
+  --output Graphs/circle_first_three
+```
+
+For multiple inputs, the default overlays each run's `/ground_truth/odom`
+trajectory and cross-track error with a single shared reference path. The
+reference is the ideal CSV path; ground-truth odometry is the measured motion
+of each run and is not assumed identical. The script rejects differing
+reference waypoints (coordinate tolerance 1e-9 m) or comparison frames.
+Use `--source odom` to compare estimates, or `--source both` to include both
+sources (dotted odometry and solid ground truth, one color per run).
+A single input retains the original two-source view. Plotting processes all
+CSV rows when you execute it, so the figure covers the complete trajectories.
