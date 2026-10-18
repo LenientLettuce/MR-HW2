@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # run_q9.sh - Problem 9(c): 12 spin tests (scale 0.9/1.1 x omega 0.5/1.0 x 3 trials)
 # Usage: ./run_q9.sh      (PAIR=P08 GUI=false by default)
+# AI was used to write this script 
 set -u
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; cd "$REPO_ROOT"
 set +u; source /opt/ros/jazzy/setup.bash; source "$REPO_ROOT/src_affan/install/setup.bash"; set -u
