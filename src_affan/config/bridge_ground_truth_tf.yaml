@@ -1,0 +1,13 @@
+# The ground-truth world -> base_link_gt transform, bridged into /tf so
+# RViz can draw where the robot REALLY is next to where odometry thinks it
+# is. Loaded when sim.launch.py is started with gt_tf:=true (the default).
+#
+# base_link_gt is a separate frame on purpose: it never competes with
+# base_link. The launch file also publishes a static world -> odom
+# transform equal to the spawn pose (the identity by default), so both
+# frames start in the same place.
+- ros_topic_name: /tf
+  gz_topic_name: /a2/ground_truth_tf
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS

@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<!--
+  properties.xacro - every dimension of the robot, defined ONCE.
+
+  The four values below marked (per pair) are overridden by the launch file
+  from config/pairs.yaml, so each pair simulates its own robot. Everything
+  else in the model is computed from these properties. If you find yourself
+  typing a number anywhere else in the description, it belongs here instead.
+
+  Units: metres, kilograms, radians.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- ===== Per-pair values (set by the launch file) ===== -->
+  <xacro:arg name="wheel_radius_left"  default="0.050"/>  <!-- (per pair) -->
+  <xacro:arg name="wheel_radius_right" default="0.050"/>  <!-- (per pair) -->
+  <xacro:arg name="wheel_separation"   default="0.300"/>  <!-- (per pair) track width b -->
+  <xacro:arg name="wheel_width"        default="0.040"/>
+
+  <!-- Scale applied ONLY to the diff-drive plugin's wheel_separation.
+       1.0 = plugin agrees with the physical robot. Used in the
+       extra-credit problem "A wrong track width". -->
+  <xacro:arg name="plugin_separation_scale" default="1.0"/>
+
+  <!-- Standard deviation (m) of the Gaussian noise on every LiDAR range.
+       0 = noise-free ranges. -->
+  <xacro:arg name="lidar_noise" default="0.01"/>
+
+  <!-- ===== Wheels ===== -->
+  <xacro:property name="r_left"      value="$(arg wheel_radius_left)"/>
+  <xacro:property name="r_right"     value="$(arg wheel_radius_right)"/>
+  <xacro:property name="r_mean"      value="${(r_left + r_right) / 2.0}"/>
+  <xacro:property name="b"           value="$(arg wheel_separation)"/>
+  <xacro:property name="wheel_width" value="$(arg wheel_width)"/>
+  <xacro:property name="wheel_mass"  value="0.25"/>
+
+  <!-- ===== Chassis (a box carried by base_link) ===== -->
+  <xacro:property name="chassis_length"    value="0.36"/>
+  <xacro:property name="chassis_width"     value="${b - wheel_width - 0.02}"/>
+  <xacro:property name="chassis_height"    value="0.10"/>
+  <xacro:property name="chassis_clearance" value="0.03"/>  <!-- ground to underside -->
+  <xacro:property name="chassis_x"         value="0.10"/>  <!-- box centre ahead of the axle -->
+  <xacro:property name="chassis_mass"      value="2.0"/>
+
+  <!-- ===== Caster (frictionless sphere at the front) ===== -->
+  <xacro:property name="caster_radius" value="0.025"/>
+  <xacro:property name="caster_x"      value="0.25"/>
+  <xacro:property name="caster_mass"   value="0.05"/>
+
+  <!-- ===== LiDAR ===== -->
+  <xacro:property name="lidar_radius" value="0.035"/>
+  <xacro:property name="lidar_length" value="0.04"/>
+  <xacro:property name="lidar_x"      value="${chassis_x}"/>
+  <xacro:property name="lidar_mass"   value="0.10"/>
+  <xacro:property name="lidar_noise"  value="$(arg lidar_noise)"/>
+
+  <!-- ===== What the diff-drive plugin is told =====
+       The plugin has ONE wheel radius and ONE separation. It is given the
+       mean of the two physical radii and the physical track width, scaled
+       by plugin_separation_scale. -->
+  <xacro:property name="plugin_wheel_radius"     value="${r_mean}"/>
+  <xacro:property name="plugin_wheel_separation"
+                  value="${b * $(arg plugin_separation_scale)}"/>
+
+  <!-- ===== Heights, all relative to base_link =====
+       base_link sits at the midpoint of the wheel axle, r_mean above the
+       ground, x forward, y left, z up. -->
+  <xacro:property name="chassis_z" value="${chassis_clearance + chassis_height / 2.0 - r_mean}"/>
+  <xacro:property name="caster_z"  value="${caster_radius - r_mean}"/>
+  <xacro:property name="lidar_z"
+                  value="${chassis_clearance + chassis_height + lidar_length / 2.0 - r_mean}"/>
+
+</robot>

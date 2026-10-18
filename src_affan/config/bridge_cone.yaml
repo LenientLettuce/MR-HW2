@@ -1,0 +1,15 @@
+# Bridge for the moving cone. Loaded by sim.launch.py only with cone:=true.
+
+# Velocity commands -> the cone (body frame: linear.x forward, angular.z).
+- ros_topic_name: /cone/cmd_vel
+  gz_topic_name: /cone/cmd_vel
+  ros_type_name: geometry_msgs/msg/Twist
+  gz_type_name: gz.msgs.Twist
+  direction: ROS_TO_GZ
+
+# True pose of the cone in the world frame, from the physics engine.
+- ros_topic_name: /cone/ground_truth/odom
+  gz_topic_name: /cone/ground_truth/odom
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: gz.msgs.Odometry
+  direction: GZ_TO_ROS

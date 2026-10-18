@@ -1,0 +1,155 @@
+<?xml version="1.0"?>
+<!--
+  a2_bot.urdf.xacro - differential-drive robot for EE/CE 468 A2.
+
+  Frames (REP 103: x forward, y left, z up):
+    base_link        midpoint of the wheel axle, r_mean above the ground.
+                     This is the ROOT link: Gazebo's model pose, the
+                     ground-truth pose and every odometry estimate all refer
+                     to this point.
+    left_wheel_link  wheel centre; its z-axis is the wheel's spin axis
+    right_wheel_link
+    caster_link      centre of the front caster sphere
+    lidar_link       centre of the LiDAR; its x-axis is beam 0
+
+  Dimensions live in properties.xacro. Gazebo-only content (plugins,
+  sensors, friction) lives in a2_bot.gazebo.xacro.
+-->
+<robot name="a2_bot" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="properties.xacro"/>
+  <xacro:include filename="inertia_macros.xacro"/>
+
+  <!-- ===== Colours (used by RViz; converted to Gazebo materials too) ===== -->
+  <material name="chassis_blue"><color rgba="0.14 0.36 0.47 1.0"/></material>
+  <material name="wheel_black"><color rgba="0.10 0.10 0.10 1.0"/></material>
+  <material name="caster_grey"><color rgba="0.60 0.60 0.60 1.0"/></material>
+  <material name="lidar_teal"><color rgba="0.18 0.49 0.46 1.0"/></material>
+  <material name="marker_white"><color rgba="0.95 0.95 0.95 1.0"/></material>
+
+  <!-- ===================================================================
+       base_link: carries the chassis box. The box is offset forward and
+       up from base_link; the offsets are the <origin> of each element.
+       =================================================================== -->
+  <link name="base_link">
+    <visual>
+      <origin xyz="${chassis_x} 0 ${chassis_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+      <material name="chassis_blue"/>
+    </visual>
+    <collision>
+      <origin xyz="${chassis_x} 0 ${chassis_z}" rpy="0 0 0"/>
+      <geometry>
+        <box size="${chassis_length} ${chassis_width} ${chassis_height}"/>
+      </geometry>
+    </collision>
+    <xacro:box_inertia m="${chassis_mass}"
+                       x="${chassis_length}" y="${chassis_width}" z="${chassis_height}"
+                       xyz="${chassis_x} 0 ${chassis_z}"/>
+  </link>
+
+  <!-- ===================================================================
+       Wheels.
+       The wheel LINK frame is rotated by roll = -pi/2 about x, so the
+       link's z-axis points along base_link's +y. A URDF <cylinder> is
+       always built around its own z-axis, so the cylinder visual needs no
+       further rotation, and the joint axis is simply 0 0 1.
+
+       The COLLISION shape is a sphere of the wheel radius, not a cylinder:
+       a sphere touches the ground at a single point, directly below the
+       wheel centre.
+
+       Each wheel centre sits at height (radius - r_mean) relative to
+       base_link, so wheels of slightly different radius both touch the
+       ground while base_link stays level.
+       =================================================================== -->
+  <xacro:macro name="wheel" params="side y radius">
+    <link name="${side}_wheel_link">
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${wheel_width}"/>
+        </geometry>
+        <material name="wheel_black"/>
+      </visual>
+      <!-- A white stripe on the outer face so wheel rotation is visible. -->
+      <visual>
+        <origin xyz="${radius / 2.0} 0 0" rpy="0 0 0"/>
+        <geometry>
+          <box size="${radius} ${radius / 5.0} ${wheel_width * 1.02}"/>
+        </geometry>
+        <material name="marker_white"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+          <sphere radius="${radius}"/>
+        </geometry>
+      </collision>
+      <xacro:cylinder_inertia m="${wheel_mass}" r="${radius}" h="${wheel_width}"/>
+    </link>
+
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${side}_wheel_link"/>
+      <origin xyz="0 ${y} ${radius - r_mean}" rpy="${-pi / 2.0} 0 0"/>
+      <axis xyz="0 0 1"/>
+    </joint>
+
+    <gazebo reference="${side}_wheel_link">
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+  </xacro:macro>
+
+  <xacro:wheel side="left"  y="${ b / 2.0}" radius="${r_left}"/>
+  <xacro:wheel side="right" y="${-b / 2.0}" radius="${r_right}"/>
+
+  <!-- ===================================================================
+       Caster: a frictionless sphere rigidly attached at the front.
+       It carries weight but produces no traction, so it does not appear
+       in the kinematic model.
+       =================================================================== -->
+  <link name="caster_link">
+    <visual>
+      <geometry><sphere radius="${caster_radius}"/></geometry>
+      <material name="caster_grey"/>
+    </visual>
+    <collision>
+      <geometry><sphere radius="${caster_radius}"/></geometry>
+    </collision>
+    <xacro:sphere_inertia m="${caster_mass}" r="${caster_radius}"/>
+  </link>
+
+  <joint name="caster_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="caster_link"/>
+    <origin xyz="${caster_x} 0 ${caster_z}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- ===================================================================
+       LiDAR on top of the chassis. Beam 0 points along lidar_link +x,
+       which is aligned with base_link +x.
+       =================================================================== -->
+  <link name="lidar_link">
+    <visual>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_length}"/></geometry>
+      <material name="lidar_teal"/>
+    </visual>
+    <collision>
+      <geometry><cylinder radius="${lidar_radius}" length="${lidar_length}"/></geometry>
+    </collision>
+    <xacro:cylinder_inertia m="${lidar_mass}" r="${lidar_radius}" h="${lidar_length}"/>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="lidar_link"/>
+    <origin xyz="${lidar_x} 0 ${lidar_z}" rpy="0 0 0"/>
+  </joint>
+
+  <xacro:include filename="a2_bot.gazebo.xacro"/>
+
+</robot>
