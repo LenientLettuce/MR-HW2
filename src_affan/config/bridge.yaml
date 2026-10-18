@@ -1,0 +1,47 @@
+# ros_gz_bridge configuration: which Gazebo topics appear in ROS 2 and
+# which ROS 2 topics reach Gazebo. Loaded by launch/sim.launch.py.
+#
+# Direction GZ_TO_ROS: Gazebo publishes, ROS 2 subscribers see it.
+# Direction ROS_TO_GZ: ROS 2 publishes, Gazebo systems see it.
+
+# Simulation time. Every node in this course runs with use_sim_time:=true.
+- ros_topic_name: /clock
+  gz_topic_name: /clock
+  ros_type_name: rosgraph_msgs/msg/Clock
+  gz_type_name: gz.msgs.Clock
+  direction: GZ_TO_ROS
+
+# Velocity commands -> the diff-drive system.
+- ros_topic_name: /cmd_vel
+  gz_topic_name: /cmd_vel
+  ros_type_name: geometry_msgs/msg/Twist
+  gz_type_name: gz.msgs.Twist
+  direction: ROS_TO_GZ
+
+# Odometry computed by the diff-drive system from its OWN parameters.
+- ros_topic_name: /odom
+  gz_topic_name: /odom
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: gz.msgs.Odometry
+  direction: GZ_TO_ROS
+
+# Wheel joint angles and velocities (your encoders for your own odometry).
+- ros_topic_name: /joint_states
+  gz_topic_name: /joint_states
+  ros_type_name: sensor_msgs/msg/JointState
+  gz_type_name: gz.msgs.Model
+  direction: GZ_TO_ROS
+
+# LiDAR.
+- ros_topic_name: /scan
+  gz_topic_name: /scan
+  ros_type_name: sensor_msgs/msg/LaserScan
+  gz_type_name: gz.msgs.LaserScan
+  direction: GZ_TO_ROS
+
+# True pose of base_link in the world frame, from the physics engine.
+- ros_topic_name: /ground_truth/odom
+  gz_topic_name: /ground_truth/odom
+  ros_type_name: nav_msgs/msg/Odometry
+  gz_type_name: gz.msgs.Odometry
+  direction: GZ_TO_ROS

@@ -1,0 +1,11 @@
+# The diff-drive system's odom -> base_link transform, bridged into /tf.
+#
+# Loaded only when sim.launch.py is started with plugin_tf:=true (the
+# default). Once your own odometry node broadcasts odom -> base_link,
+# launch with plugin_tf:=false, or TF will receive two conflicting
+# parents for base_link and RViz will flicker between them.
+- ros_topic_name: /tf
+  gz_topic_name: /a2/plugin_tf
+  ros_type_name: tf2_msgs/msg/TFMessage
+  gz_type_name: gz.msgs.Pose_V
+  direction: GZ_TO_ROS

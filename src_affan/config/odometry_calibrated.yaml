@@ -1,0 +1,8 @@
+# Calibrated odometry parameters after UMBmark + scale test (Task 5e)
+odometry_node:
+  ros__parameters:
+    use_sim_time: true
+    r_left: 0.054147
+    r_right: 0.053848
+    b: 0.319529
+    method: rk2

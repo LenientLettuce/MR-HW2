@@ -1,0 +1,10 @@
+odometry_node:
+  ros__parameters:
+    use_sim_time: true
+    # P08 nameplate parameters (metres) for Question 5 UMBmark calibration
+    r_left: 0.053
+    r_right: 0.053
+    b: 0.313
+    publish_rate: 50.0
+    method: rk2
+

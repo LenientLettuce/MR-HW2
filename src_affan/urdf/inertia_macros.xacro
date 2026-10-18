@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!--
+  inertia_macros.xacro - inertial blocks for solid primitives.
+
+  Each macro writes an <inertial> element whose inertia tensor is expressed
+  in the frame given by `xyz`/`rpy` (default: the link frame). For a
+  cylinder, the formula assumes the cylinder's axis is the z-axis of that
+  frame, the same convention URDF uses for <cylinder> geometry.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Solid box, side lengths x, y, z. -->
+  <xacro:macro name="box_inertia" params="m x y z xyz:='0 0 0' rpy:='0 0 0'">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m * (y*y + z*z) / 12.0}" ixy="0" ixz="0"
+               iyy="${m * (x*x + z*z) / 12.0}" iyz="0"
+               izz="${m * (x*x + y*y) / 12.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Solid cylinder, radius r, length h, axis along frame z. -->
+  <xacro:macro name="cylinder_inertia" params="m r h xyz:='0 0 0' rpy:='0 0 0'">
+    <inertial>
+      <origin xyz="${xyz}" rpy="${rpy}"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m * (3*r*r + h*h) / 12.0}" ixy="0" ixz="0"
+               iyy="${m * (3*r*r + h*h) / 12.0}" iyz="0"
+               izz="${m * r*r / 2.0}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Solid sphere, radius r. -->
+  <xacro:macro name="sphere_inertia" params="m r xyz:='0 0 0'">
+    <inertial>
+      <origin xyz="${xyz}" rpy="0 0 0"/>
+      <mass value="${m}"/>
+      <inertia ixx="${2.0 * m * r*r / 5.0}" ixy="0" ixz="0"
+               iyy="${2.0 * m * r*r / 5.0}" iyz="0"
+               izz="${2.0 * m * r*r / 5.0}"/>
+    </inertial>
+  </xacro:macro>
+
+</robot>

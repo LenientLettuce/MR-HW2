@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<!--
+  a2_bot.gazebo.xacro - everything that only Gazebo reads.
+
+  RViz and robot_state_publisher ignore <gazebo> tags. Gazebo Sim
+  (Harmonic) converts the URDF to SDF and loads the systems below.
+  Topic names here are GAZEBO topics; config/bridge*.yaml maps them to
+  ROS 2 topics.
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Caster: zero friction, so it slides in every direction. -->
+  <gazebo reference="caster_link">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+  </gazebo>
+
+  <!-- Keep the caster as its own link in Gazebo (instead of merging it into
+       base_link) so the friction setting above reliably applies to it. -->
+  <gazebo reference="caster_joint">
+    <preserveFixedJoint>true</preserveFixedJoint>
+  </gazebo>
+
+  <gazebo>
+    <!-- ================================================================
+         1. Differential-drive system.
+         Subscribes to /cmd_vel (Twist). Converts (v, w) into left/right
+         wheel angular velocities using ITS OWN wheel_separation and
+         wheel_radius, and commands the joints. It also integrates the
+         joint motion back into odometry, again with its own values,
+         and publishes it on /odom, plus the odom -> base_link transform.
+         ================================================================ -->
+    <plugin filename="gz-sim-diff-drive-system"
+            name="gz::sim::systems::DiffDrive">
+      <left_joint>left_wheel_joint</left_joint>
+      <right_joint>right_wheel_joint</right_joint>
+      <wheel_separation>${plugin_wheel_separation}</wheel_separation>
+      <wheel_radius>${plugin_wheel_radius}</wheel_radius>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/a2/plugin_tf</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_link</child_frame_id>
+      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+
+    <!-- ================================================================
+         2. Joint-state publisher.
+         Publishes the angle (rad, cumulative, not wrapped) and angular
+         velocity of each wheel joint. robot_state_publisher needs these to
+         place the wheel frames in TF. For your own odometry they are your
+         encoders.
+         ================================================================ -->
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+      <joint_name>left_wheel_joint</joint_name>
+      <joint_name>right_wheel_joint</joint_name>
+    </plugin>
+
+    <!-- ================================================================
+         3. Ground truth.
+         Reads the TRUE pose of the model (i.e. of base_link, the root
+         link) from the physics engine, not from the wheels, and
+         publishes it in the world frame. A real robot has no equivalent;
+         treat it as a perfect external tracking system.
+         ================================================================ -->
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>world</odom_frame>
+      <robot_base_frame>base_link_gt</robot_base_frame>
+      <odom_topic>/ground_truth/odom</odom_topic>
+      <tf_topic>/a2/ground_truth_tf</tf_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
+      <dimensions>2</dimensions>
+    </plugin>
+  </gazebo>
+
+  <!-- ==================================================================
+       4. 2D LiDAR: 360 beams, 1 degree apart, 10 Hz.
+       Beam i points at angle i degrees, counter-clockwise from the
+       robot's forward direction, so ranges[90] looks straight left and
+       ranges[270] straight right. Range noise is Gaussian with standard
+       deviation lidar_noise (launch argument; 0 leaves the noise out).
+       ================================================================== -->
+  <gazebo reference="lidar_link">
+    <sensor name="lidar" type="gpu_lidar">
+      <topic>/scan</topic>
+      <gz_frame_id>lidar_link</gz_frame_id>
+      <update_rate>10</update_rate>
+      <always_on>true</always_on>
+      <visualize>true</visualize>
+      <lidar>
+        <scan>
+          <horizontal>
+            <samples>360</samples>
+            <resolution>1</resolution>
+            <min_angle>0.0</min_angle>
+            <max_angle>${359.0 * pi / 180.0}</max_angle>
+          </horizontal>
+        </scan>
+        <range>
+          <min>0.12</min>
+          <max>8.0</max>
+          <resolution>0.01</resolution>
+        </range>
+        <xacro:if value="${float(lidar_noise) > 0.0}">
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>${lidar_noise}</stddev>
+          </noise>
+        </xacro:if>
+      </lidar>
+    </sensor>
+  </gazebo>
+
+</robot>

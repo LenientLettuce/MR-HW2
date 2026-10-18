@@ -22,8 +22,10 @@ Arguments (all optional):
                                                      (default true)
     gui                      show the Gazebo window  (default true)
     rviz                     open RViz               (default true)
-    path                     circle or square: show that reference path in
-                             RViz (on /path); empty for none  (default '')
+    path                     circle or square: display that reference path and
+                             load its CSV in pure_pursuit; empty for none
+    Ld                       pure pursuit lookahead in metres (default 0.3)
+    v                        pure pursuit speed in m/s         (default 0.2)
     x, y, yaw                spawn pose in the world frame (m, m, rad)
                                                      (default 0, 0, 0)
     cone                     add the movable cone 1.5 m ahead of the robot
@@ -216,8 +218,7 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(LaunchConfiguration('rviz')),
     )
 
-    # Optional reference path for pure pursuit, drawn in RViz. Controllers
-    # read the same waypoints from paths/<name>.csv.
+    # Display the selected path and load the same CSV in pure_pursuit.
     path_name = LaunchConfiguration('path').perform(context).strip().lower()
     if path_name not in ('', 'circle', 'square'):
         raise RuntimeError(f"path must be 'circle', 'square' or empty, got '{path_name}'")
@@ -228,6 +229,23 @@ def launch_setup(context, *args, **kwargs):
             executable='path_publisher.py',
             output='screen',
             parameters=[{'path': path_name, 'use_sim_time': True}],
+        ), Node(
+            package=PKG,
+            executable='pure_pursuit.py',
+            name='pure_pursuit',
+            output='screen',
+            parameters=[{
+                'path': path_name,
+                'Ld': float(LaunchConfiguration('Ld').perform(context)),
+                'v': float(LaunchConfiguration('v').perform(context)),
+                'pair': pair,
+                'own_odometry': own_odometry,
+                'spawn_x': x0,
+                'spawn_y': y0,
+                'spawn_yaw': yaw0,
+                'use_sim_time': True,
+            }, *([{'runs_dir': LaunchConfiguration('runs_dir').perform(context)}]
+                 if LaunchConfiguration('runs_dir').perform(context) else [])],
         )]
 
     student_nodes = []
@@ -284,7 +302,13 @@ def generate_launch_description():
                               description='Show the Gazebo window'),
         DeclareLaunchArgument('rviz', default_value='true', description='Open RViz'),
         DeclareLaunchArgument('path', default_value='',
-                              description='Reference path to show in RViz: circle, square or empty'),
+                              description='CSV to display and load in pure_pursuit: circle, square or empty'),
+        DeclareLaunchArgument('Ld', default_value='0.3',
+                              description='Pure pursuit lookahead distance (m)'),
+        DeclareLaunchArgument('v', default_value='0.2',
+                              description='Pure pursuit forward speed (m/s)'),
+        DeclareLaunchArgument('runs_dir', default_value='',
+                              description='Run CSV folder; empty uses HW2/Pure Pursuit Runs'),
         DeclareLaunchArgument('x', default_value='0.0', description='Spawn x in the world frame (m)'),
         DeclareLaunchArgument('y', default_value='0.0', description='Spawn y in the world frame (m)'),
         DeclareLaunchArgument('yaw', default_value='0.0',
